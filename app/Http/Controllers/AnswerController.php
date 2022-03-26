@@ -14,7 +14,7 @@ class AnswerController extends Controller
         $validator = Validator::make($request->all(), [
             'id_mhs' => 'integer|required',
             'id_pertanyaan' => 'integer|required',
-            'nim' => 'integer|required',
+            'nim' => 'integer|required',    
             'jawaban' => 'integer|required',
         ]);
 
@@ -28,6 +28,7 @@ class AnswerController extends Controller
             $participantAnswer->id_pertanyaan = $request->id_pertanyaan;
             $participantAnswer->nim = $request->nim;
             $participantAnswer->jawaban = $request->jawaban;
+            $participantAnswer->alasan = $request->alasan;
             $participantAnswer->save();
 
             $response['code'] = 200;

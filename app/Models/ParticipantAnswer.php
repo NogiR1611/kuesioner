@@ -15,7 +15,8 @@ class ParticipantAnswer extends Model
         'id_mhs',
         'id_pertanyaan',
         'nim',
-        'jawaban'
+        'jawaban',
+        'alasan'
     ];
 
     public function pertanyaan(){

@@ -19,6 +19,7 @@ class CreateParticipantAnswersTable extends Migration
             $table->unsignedBigInteger('id_pertanyaan');
             $table->Integer('nim');
             $table->Integer('jawaban');
+            $table->string("alasan");
             $table->timestamps();
             $table->foreign('id_pertanyaan')->references('id')->on('questions');
             $table->foreign('id_mhs')->references('id')->on('participants');

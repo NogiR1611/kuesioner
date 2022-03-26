@@ -18,6 +18,7 @@ class CreateParticipantsTable extends Migration
             $table->integer('nim');
             $table->string('nama');
             $table->string('gender');
+            $table->string('email');
             $table->integer('semester');
             $table->timestamps();
         });

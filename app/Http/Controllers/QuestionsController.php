@@ -9,6 +9,10 @@ class QuestionsController extends Controller
 {
     public function index()
     {
+        return view('user');
+    }
+
+    public function all(){
         $questions = new Questions();
         $data = $questions->get();
 
@@ -17,6 +21,7 @@ class QuestionsController extends Controller
         $response['data'] = $data;
 
         return response()->json($response, 200);
+        //return view('index')->with('pertanyaan', $data);
     }
 
     public function detail($id)
