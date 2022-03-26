@@ -1,0 +1,426 @@
+Skip to content
+DEV Community
+Search...
+
+Log in
+Create account
+
+20
+
+7
+
+47
+
+Cover image for Continuous Deployment on Shared Hosting with GitHub Actions
+Madalitso Nyemba
+Madalitso Nyemba
+Posted on May 2, 2021 • Updated on May 9, 2021
+
+Continuous Deployment on Shared Hosting with GitHub Actions
+#
+github
+#
+laravel
+#
+devops
+#
+vue
+Introduction
+In this fast-paced world, where everything seems to be happening quickly, it is paramount for early as well as frequent deployment of websites/apps to keep up with the competition. There are various ways of deploying your web apps to your server but will shall be looking at how GitHub actions can help us continuously deploy our web app with minimal effort.
+
+What is Continuous Deployment
+First of all, what is continuous deployment you ask? According to Search IT operations
+
+Continuous deployment is a strategy for software releases wherein any code commit that passes the automated testing phase is automatically released into the production environment, making changes that are visible to the software's users.
+
+We will not cover tests in this post (but in a later post). As you can see from the definition, simply commit and then all your changes are on the production server.
+
+What is Shared Hosting
+There are different hosting choices with the popular ones now being shared hosting and cloud hosting.
+
+A shared web hosting service is a web hosting service where many websites reside on one web server connected to the Internet.
+This is the cheapest way to host your website since the different users split the cost of the web server but it also has drawbacks since the resources are split across a number of users as well.
+
+I have been using shared hosting for a long time and I got bored with transferring my files via FTP every time I made changes. I then resorted to using GitHub where I pushed my code to the repo then pulled it from my shared hosting. I still was not satisfied. I used GitFtp which was alright. Until I learned about CI/CD in my Azubi Africa class.
+
+GitHub Actions to the rescue
+After further research, came across GitHub actions. According to their site:
+
+Automate, customize, and execute your software development workflows right in your repository with GitHub Actions. You can discover, create, and share actions to perform any job you'd like, including CI/CD, and combine actions in a completely customized workflow.
+
+The Workflow
+Let us get to the juicy bit by doing some actual work.
+
+Setting up GitHub actions
+(This is assuming you already have a repository in your GitHub account that you want to link to your shared hosting. if not, click here).
+
+Open your repository on GitHub and head over to Actions tab.
+Actions tab
+
+Click on the set up a workflow yourself → as shown below.
+Set up workflow yourself
+
+Delete all the contents of main.yml on the page as shown below:
+Delete contents
+
+Replace the file with below contents (note this is for a project in Laravel with a Vue frontend)
+name: Deploy Site on push
+on:
+  push:
+    branches:
+      - master
+jobs:
+  web-deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+    - name: Get the latest code
+      uses: actions/checkout@v2.3.2
+    - uses: actions/setup-node@master
+    - name: Installing project dependencies
+      run: npm install
+    - name: Building the project
+      run: npm run production
+    - name: Copy .env
+      run: php -r "file_exists('.env') || copy('.env.example', '.env');"
+    - name: Install Dependencies
+      run: composer update --ignore-platform-reqs
+    - name: Generate key
+      run: php artisan key:generate
+    - name: Directory Permissions
+      run: chmod -R 777 storage bootstrap/cache
+    - name: 📂 Sync files
+      uses: SamKirkland/FTP-Deploy-Action@4.0.0
+      with:
+        server: ${{ secrets.LARAVEL_SITE_SERVER}}
+        username: ${{ secrets.LARAVEL_SITE_USER}}
+        password: ${{ secrets.LARAVEL_SITE_PASS}}
+Let me now explain block by block what is going on
+name: Deploy Site on push
+This is the name of the workflow. GitHub displays the names of your workflows on your repository’s actions page after you write it.
+on:
+  push:
+    branches:
+      - master
+This is where the GitHub action system is told when to run the workflow. The above snippet triggers the workflow when one pushes to the master branch. For more on the On key, click here
+jobs:
+  web-deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+jobs - Groups together all the jobs that run in the workflow file.
+
+web-deploy - Defines the name of the web-deploy job stored within the jobs section.
+
+runs-on: ubuntu-latest - Configures the job to run on an Ubuntu Linux runner. This means that the job will execute on a fresh virtual machine hosted by GitHub.
+steps:
+    - name: Get the latest code
+      uses: actions/checkout@v2.3.2
+    - uses: actions/setup-node@master
+    - name: Installing project dependencies
+      run: npm install
+    - name: Building the project
+      run: npm run production
+Remember that the steps are inside the job block.
+
+steps - Groups together all the steps that run in the web-deploy job. Each item nested under this section is a separate action or shell command.
+
+name - For identification of the separate action.
+
+uses: actions/checkout@v2.3.2 - The uses keyword tells the job to retrieve v2 of the community action named actions/checkout@v2.3.2. This is an action that checks out your repository and downloads it to the runner, allowing you to run actions against your code (such as testing tools). You must use the checkout action any time your workflow will run against the repository's code or you are using an action defined in the repository.
+
+uses: actions/setup-node@master - This action installs the node software package on the runner, giving you access to the npm command.
+
+run: npm install - The run keyword tells the job to execute a command on the runner. In this case, you are using npm to install the package node dependecies.
+
+run: npm run production - This builds the Vue frontend project.
+
+- name: Copy .env
+      run: php -r "file_exists('.env') || copy('.env.example', '.env');"
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.0'
+    - name: Install Dependencies
+      run: composer update --ignore-platform-reqs
+    - name: Generate key
+      run: php artisan key:generate
+    - name: Directory Permissions
+      run: chmod -R 777 storage bootstrap/cache
+run: php -r "file_exists('.env') || copy('.env.example', '.env'); - This creates a .env file if it does not already exist (this is important as this is automatically added to the .gitignore file).
+
+run: composer update --ignore-platform-reqs - This is used to install and update the composer packages.
+
+run: php artisan key:generate - This generates a key for the Laravel project.
+
+run: chmod -R 777 storage bootstrap/cache - This changes permissions for the specified folder.
+- name: 📂 Sync files
+      uses: SamKirkland/FTP-Deploy-Action@4.0.0
+      with:
+        server: ${{ secrets.LARAVEL_SITE_SERVER}}
+        username: ${{ secrets.LARAVEL_SITE_USER}}
+        password: ${{ secrets.LARAVEL_SITE_PASS}}
+This is where the files are now transferred to the shared hosting server. Get your FTP details from your shared hosting. Then go to your repo>settings>secrets then add the three secrets namely: server, username and then password. This action is courtesy of SamKirkland.
+
+For more information on GitHub actions, click here
+
+Enjoy 😎
+
+Discussion (14)
+Subscribe
+pic
+Add to the discussion
+ 
+jovialcore profile image
+Chidiebere Chukwudi
+•
+Sep 22 '21
+
+Thanks for the tutorial...Let me add that, if you follow this tutorial and your GitHub Action workflow is not running, always make sure that your branch name in the yml file is same with the branch name on your github repo.
+For example, make sure main branch on your github repo is same with the specified branch in yaml and not a different branch name like master
+
+
+1
+ like
+Reply
+ 
+artalus profile image
+Artalus
+•
+May 6 '21
+
+How is that you first run: php -r "file_exists, but only then uses: shivammathur/setup-php@v2 ? 🤔
+Does GHA come with "some abstract php" preinstalled, and then you override it with the specific version? Even if so, these two actions should probably be switched, install and then run.
+
+
+1
+ like
+Reply
+ 
+madalitsonyemba profile image
+Madalitso Nyemba 
+•
+May 9 '21
+
+In fact, you are right in the observation. GHA used to come with php 7.4 as default that is why I changed to 8.0 but these should be switched indeed. In fact, now GHA comes with php 8.0 as default so removing the specific version would not hurt. Thanks for pointing it out.
+
+
+1
+ like
+Reply
+ 
+rahulhuilgol profile image
+Rahul Huilgol
+•
+May 20 '21
+
+Great article! Well, I just carried out this process following these steps that you've written so well. Somehow the whole execution took 61 minutes. At the end I found that all the folders have been created on the server but contain no files whatsoever. Very surprising! Any idea why this should happen?
+
+
+1
+ like
+Reply
+ 
+madalitsonyemba profile image
+Madalitso Nyemba 
+•
+May 22 '21
+
+Thanks for the feedback. First, took that long due to the node_modules as well as vendor folders as they have alot of files. Second, after V2 of the FTP deploy action. It only uploads tracked files by default. This link provides a detailed explanation of the issue .github.com/SamKirkland/FTP-Deploy-...
+Hopefully that works.
+
+
+1
+ like
+Reply
+ 
+sadiazia profile image
+Sadia Zia
+•
+Nov 27 '21
+
+Hi Madalitso!
+
+Thanks for sharing such an informative piece. You know I have completely ditched shared hosting because it comes with so many limitations. As a web developer, I always look to have a lot of choices and flexibility when it comes to hosting providers. I am someone who is managing a lot of clients at a time, so I had to choose the best hosting that offered the choice of having unlimited websites on one platform. I tried out Cloudways managed cloud hosting - 3 day free trial and was mindblown. It is so easy to use and gave me the choice of choosing from 5 hosting providers like AWS, Digitalocean, Vultr, and Linode. It’s been 8 months and I am super satisfied with Cloudways performance, my website’s speed, and the flexibility I get to scale the serve according to my needs. I was also looking for a pay as you go model and thank God Cloudways offers that too.
+
+
+1
+ like
+Reply
+ 
+codetroll profile image
+Claus Paludan
+•
+Nov 8 '21
+
+Nice tutorial. However there is a few things I don't understand.
+1) why use composer update? I would assume that part would be done locally and any CI/CD stuff would use composer install to ensure that only verified and testet versions are used?
+2) why the step with the .env file - as per best practice it won't exists in the repo to begin with and is probably already uploaded to the server (or will be done manually at first deploy)
+3) why generate the laravel key each time? wouldn't this be a one time thing at the first deploy? It shouldn't be updated each time?
+
+
+1
+ like
+Reply
+ 
+drdee23 profile image
+drdee23
+•
+May 2 '21
+
+Amazing work chief
+
+
+2
+ likes
+Reply
+ 
+madalitsonyemba profile image
+Madalitso Nyemba 
+•
+May 2 '21
+
+Thanks boss
+
+
+2
+ likes
+Reply
+ 
+arthurnamz profile image
+Arthur Mwang'onda
+•
+May 2 '21
+
+Nice work boss, continue to do a good work
+
+
+2
+ likes
+Reply
+ 
+madalitsonyemba profile image
+Madalitso Nyemba 
+•
+May 2 '21
+
+Thanks
+
+
+1
+ like
+Reply
+ 
+bornadev profile image
+Borna Grilec
+•
+Oct 6 '21 • Edited on Oct 6
+
+@madalitsonyemba thank you for great tutorial, but it seems that I'm missing something...
+
+I tried to do everything like it's described, and workflow works fine, files of initial Laravel App are successfully transferred to the subdomain in the shared hosting.
+
+However, when I try to access my subdomain, application is not running, only files and directories are listed.
+
+From my previous experience of manual deployment of Laravel App to the Shared Hosting there was need to modify and move index.php file to the root directory from /public and modify all paths in asset() functions in project. I've also tried to define Document Root of the subdomain to the /project-dir/pubilc/ on the server and I still just can't run the app, now HTTP 500 ERROR is shown.
+
+I'm not using Vue.js, only basic/initial Laravel App, do you know where is the problem?
+
+
+Like
+Reply
+ 
+sevenreup profile image
+Christopher Seven Phiri
+•
+May 3 '21
+
+Very insightful
+
+
+1
+ like
+Reply
+ 
+madalitsonyemba profile image
+Madalitso Nyemba 
+•
+May 3 '21
+
+Glad to hear that.
+
+
+1
+ like
+Reply
+Code of Conduct • Report abuse
+Read next
+mitul1978 profile image
+Laravel flutter react developers
+mitul1978 - Feb 23
+
+ankit01oss profile image
+42 tips for Getting Good at DevOps & Life 🚀👩🏻‍💻
+Ankit Anand ✨ - Mar 10
+
+zydhanlinnar11 profile image
+Simple and Easy REST API Implementation With Laravel
+Zydhan Linnar Putra - Mar 20
+
+menyepy profile image
+2 free open-source OMR grading projects on github
+MenyePy - Feb 15
+
+
+Madalitso Nyemba
+Follow
+Versatile developer as well as tutor with a strong passion for delivering excellence. Has 4 years of experience in developing different types of software, websites as well as mobile applications.
+LOCATION
+Blantyre, Malawi
+JOINED
+Jul 31, 2020
+Trending on DEV Community 
+Adam Davis profile image
+How do you take notes while you code?
+#discuss #productivity #watercooler #beginners
+Domi profile image
+A Brand NEW Kind of DEBUGGER for JavaScript (Dbux: Why? What?)
+#javascript #news #programming #productivity
+Sherry Day profile image
+Describe how you use Google (or other search engine) effectively
+#discuss #productivity
+name: Deploy Site on push
+on:
+  push:
+    branches:
+      - master
+jobs:
+  web-deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+    - name: Get the latest code
+      uses: actions/checkout@v2.3.2
+    - uses: actions/setup-node@master
+    - name: Installing project dependencies
+      run: npm install
+    - name: Building the project
+      run: npm run production
+    - name: Copy .env
+      run: php -r "file_exists('.env') || copy('.env.example', '.env');"
+    - name: Install Dependencies
+      run: composer update --ignore-platform-reqs
+    - name: Generate key
+      run: php artisan key:generate
+    - name: Directory Permissions
+      run: chmod -R 777 storage bootstrap/cache
+    - name: 📂 Sync files
+      uses: SamKirkland/FTP-Deploy-Action@4.0.0
+      with:
+        server: ${{ secrets.LARAVEL_SITE_SERVER}}
+        username: ${{ secrets.LARAVEL_SITE_USER}}
+        password: ${{ secrets.LARAVEL_SITE_PASS}}
+DEV Community — A constructive and inclusive social network for software developers. With you every step of your journey.
+
+Built on Forem — the open source software that powers DEV and other inclusive communities.
+
+Made with love and Ruby on Rails. DEV Community © 2016 - 2022.
