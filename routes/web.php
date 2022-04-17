@@ -19,6 +19,7 @@ use App\Http\Controllers\ProfileController;
 
 
 Route::get('/', [QuestionsController::class, 'index']);
+Route::get('/sample', [QuestionsController::class, 'sample']);
 Route::get('/api/v1/questions', [QuestionsController::class, 'all']);
 Route::get('/api/v1/questions/{id}', [QuestionsController::class, 'detail']);
 Route::post('/api/v1/questions/answers', [AnswerController::class, 'store']);

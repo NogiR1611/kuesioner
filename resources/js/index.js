@@ -196,7 +196,7 @@ export default function Index() {
                   </h3>
                   <p>
                     Kepuasan Mahasiswa Teknik Informatika Universitas Islam Negeri
-                    Sunan Gunung Djati Bandung.
+                    Sunan Gunung Djati Bandung aw.
                   </p>
                   <p>
                     <em />

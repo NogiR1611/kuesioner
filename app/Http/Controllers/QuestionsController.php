@@ -12,6 +12,18 @@ class QuestionsController extends Controller
         return view('user');
     }
 
+    public function sample()
+    {
+        $questions = new Questions();
+        $data = $questions->get();
+
+        $response['code'] = 200;
+        $response['message'] = 'Success';
+        $response['data'] = $data;
+
+        return view('index')->with('pertanyaan', $data);
+    }
+
     public function all(){
         $questions = new Questions();
         $data = $questions->get();
