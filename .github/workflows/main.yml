@@ -12,4 +12,4 @@ jobs:
       with:
         server: ftp.invinitee.id
         username: kuesioner@kuesioner.invinitee.id	
-        password: ${{ secrets.FTP_PASSWORD }}
+        password: ${{ secrets.ftp_password }}
